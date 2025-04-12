@@ -16,18 +16,21 @@ public class Inventory : MonoBehaviour
         }
     }
 
-    public bool AddItem(Item NewItem, int amount = 1)
+    public bool AddItem(Item NewItem, int amount = 1, bool onlyEmptySlots = false)
     {
-        foreach (var slot in inventory)
+        if (!onlyEmptySlots)
         {
-            if(slot.isEmpty)
-                continue;
-
-            if (slot.item.Id == NewItem.Id && slot.amount + amount <= slot.item.MaxStack)
+            foreach (var slot in inventory)
             {
-                slot.amount += amount;
-                ActionManager.ItemChanged?.Invoke();
-                return true;
+                if (slot.isEmpty)
+                    continue;
+
+                if (slot.item.Id == NewItem.Id && slot.amount + amount <= slot.item.MaxStack)
+                {
+                    slot.amount += amount;
+                    ActionManager.ItemChanged?.Invoke();
+                    return true;
+                }
             }
         }
         foreach(var slot in inventory)
