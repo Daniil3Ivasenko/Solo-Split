@@ -7,6 +7,9 @@ public class Inventory : MonoBehaviour
 {
     public List<Slot> inventory = new List<Slot>();
     public int capacity = 20;
+    public int selectedSlot = 0;
+    public float MaxWeight = 1;
+    public float CurrentWeight;
 
     public void Awake()
     {
@@ -14,6 +17,18 @@ public class Inventory : MonoBehaviour
         {
             inventory.Add(new Slot());
         }
+        ActionManager.ItemChanged += recalculationWeight;
+    }
+
+    private void recalculationWeight()
+    {
+        float a = 0;
+        for (int i = 0; i < capacity; i++)
+        {
+            if(!inventory[i].isEmpty)
+            a += inventory[i].item.Weight * inventory[i].amount;
+        }
+        CurrentWeight = a;
     }
 
     public bool AddItem(Item NewItem, int amount = 1, bool onlyEmptySlots = false)
@@ -25,7 +40,7 @@ public class Inventory : MonoBehaviour
                 if (slot.isEmpty)
                     continue;
 
-                if (slot.item.Id == NewItem.Id && slot.amount + amount <= slot.item.MaxStack)
+                if (slot.item.Id == NewItem.Id && slot.amount + amount <= slot.item.MaxStack && CurrentWeight + (NewItem.Weight * amount) <= MaxWeight)
                 {
                     slot.amount += amount;
                     ActionManager.ItemChanged?.Invoke();
@@ -35,7 +50,7 @@ public class Inventory : MonoBehaviour
         }
         foreach(var slot in inventory)
         {
-            if (slot.isEmpty && slot.amount <= NewItem.MaxStack)
+            if (slot.isEmpty && slot.amount <= NewItem.MaxStack && CurrentWeight + (NewItem.Weight * amount) <= MaxWeight)
             {
                 slot.item = NewItem;
                 slot.amount = amount;

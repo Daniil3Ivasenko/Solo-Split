@@ -7,6 +7,12 @@ public class Item : ScriptableObject
     public string Id;
     public Sprite Icon;
     public int MaxStack = 1;
+    public float Weight = 1;
 
     public GameObject ScenePrefab;
+
+    public virtual void Use()
+    {
+        Debug.Log("Использован предмет: " + Name);
+    }
 }

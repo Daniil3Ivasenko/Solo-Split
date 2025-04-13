@@ -23,6 +23,7 @@ public class Movement : MonoBehaviour
     [SerializeField] private float MinAngle = -90;
     [Header("Inventory")]
     [SerializeField] private GameObject inventoryPanel;
+    [SerializeField] private Inventory inventory;
 
     void Awake()
     {
@@ -30,6 +31,7 @@ public class Movement : MonoBehaviour
         input = new PlayerInput();
         input.Player.Inventory.performed += context => OpenInventory();
         input.Player.Jump.performed += context => Jump();
+        input.Player.Attack.performed += context => UseItem();
         LockCursor(true);
     }
 
@@ -37,6 +39,10 @@ public class Movement : MonoBehaviour
     {
         CameraMovement();
         Move();
+    }
+    private void Update()
+    {
+        ChangeSelectedItem();
     }
 
     void CameraMovement()
@@ -90,13 +96,33 @@ public class Movement : MonoBehaviour
     {
         LockCursor(inventoryPanel.activeSelf);
         inventoryPanel.SetActive(!inventoryPanel.activeSelf);
-        if (inputActive) input.Player.Look.Disable();
+        if (inputActive)
+        {
+            input.Player.Look.Disable();
+            input.Player.Attack.Disable();
+        }
         else
         {
+            input.Player.Attack.Enable();
             input.Player.Look.Enable();
             ActionManager.inventoryClosed?.Invoke();
         }
         inputActive = !inputActive;
+    }
+
+    void UseItem()
+    {
+        inventory.inventory[inventory.selectedSlot].item?.Use();
+    }
+    void ChangeSelectedItem()
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            if (Input.GetKeyDown(KeyCode.Alpha1 + i))
+            {
+                inventory.selectedSlot = i;
+            }
+        }
     }
     private void OnEnable()
     {
