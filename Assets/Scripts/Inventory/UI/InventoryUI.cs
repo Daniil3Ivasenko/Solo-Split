@@ -42,5 +42,6 @@ public class InventoryUI : MonoBehaviour
             SlotsUI[i].UpdateSlot(slot);
         }
         WeightText.text = $"{inventory.CurrentWeight}/{inventory.MaxWeight}\nKg";
+        WeightText.color = inventory.overWeightColor;
     }
 }

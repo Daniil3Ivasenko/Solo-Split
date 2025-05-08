@@ -10,6 +10,9 @@ public class Inventory : MonoBehaviour
     public int selectedSlot = 0;
     public float MaxWeight = 1;
     public float CurrentWeight;
+    [SerializeField] private float[] overWeightCoefficients;
+    public float overWeightCoefficient;
+    public Color overWeightColor;
 
     public void Awake()
     {
@@ -18,7 +21,9 @@ public class Inventory : MonoBehaviour
             inventory.Add(new Slot());
         }
         ActionManager.ItemChanged += recalculationWeight;
+        recalculationWeight();
     }
+
 
     private void recalculationWeight()
     {
@@ -29,6 +34,29 @@ public class Inventory : MonoBehaviour
             a += inventory[i].item.Weight * inventory[i].amount;
         }
         CurrentWeight = a;
+        if (a > MaxWeight)
+        {
+            if (a > MaxWeight * 1.5)
+            {
+                overWeightCoefficient = 3;
+                overWeightColor = new Color32(255, 0, 0, 255);
+            }
+            else if (a > MaxWeight * 1.2)
+            {
+                overWeightCoefficient = 2;
+                overWeightColor = new Color32(255, 128, 0, 255);
+            }
+            else
+            {
+                overWeightCoefficient = 1;
+                overWeightColor = new Color32(255, 255, 0, 255);
+            }
+        }
+        else
+        {
+            overWeightCoefficient = 0;
+            overWeightColor = Color.black;
+        }
     }
 
     public bool AddItem(Item NewItem, int amount = 1, bool onlyEmptySlots = false)
@@ -40,7 +68,7 @@ public class Inventory : MonoBehaviour
                 if (slot.isEmpty)
                     continue;
 
-                if (slot.item.Id == NewItem.Id && slot.amount + amount <= slot.item.MaxStack && CurrentWeight + (NewItem.Weight * amount) <= MaxWeight)
+                if (slot.item.Id == NewItem.Id && slot.amount + amount <= slot.item.MaxStack)
                 {
                     slot.amount += amount;
                     ActionManager.ItemChanged?.Invoke();
@@ -50,7 +78,7 @@ public class Inventory : MonoBehaviour
         }
         foreach(var slot in inventory)
         {
-            if (slot.isEmpty && slot.amount <= NewItem.MaxStack && CurrentWeight + (NewItem.Weight * amount) <= MaxWeight)
+            if (slot.isEmpty && slot.amount <= NewItem.MaxStack)
             {
                 slot.item = NewItem;
                 slot.amount = amount;

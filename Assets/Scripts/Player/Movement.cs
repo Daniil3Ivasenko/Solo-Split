@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Movement : MonoBehaviour
 {
@@ -15,7 +16,12 @@ public class Movement : MonoBehaviour
     [Header("Player")]
     [SerializeField] private float WalkSpeed = 10;
     [SerializeField] private float RunSpeed = 20;
+    [SerializeField] public float stamina { get { return _stamina; } set { _stamina = Mathf.Clamp(value, 0f, 100f); slider.value = _stamina / 100; if (_stamina > 30) canRun = true;
+            if (_stamina < 0.1) canRun = false;} }
     Rigidbody rb;
+    public float _stamina;
+    public bool canRun = true;
+    public Slider slider;
     [Header("Camera")]
     public Transform Camera;
     private float _currentAngle;
@@ -24,21 +30,26 @@ public class Movement : MonoBehaviour
     [Header("Inventory")]
     [SerializeField] private GameObject inventoryPanel;
     [SerializeField] private Inventory inventory;
+    private float speedModifier;
+    private float staminaModifier;
 
     void Awake()
     {
+        ActionManager.ItemChanged += RecalculateOverWeightModifier;
         rb = GetComponent<Rigidbody>();
         input = new PlayerInput();
         input.Player.Inventory.performed += context => OpenInventory();
         input.Player.Jump.performed += context => Jump();
         input.Player.Attack.performed += context => UseItem();
         LockCursor(true);
+        RecalculateOverWeightModifier();
     }
 
     private void FixedUpdate()
     {
         CameraMovement();
         Move();
+        Debug.Log(inventory.overWeightCoefficient);
     }
     private void Update()
     {
@@ -58,18 +69,23 @@ public class Movement : MonoBehaviour
     {
         Vector2 direction = input.Player.Move.ReadValue<Vector2>();
         float RunForward = direction.y < 0 ? direction.y * WalkSpeed : direction.y * RunSpeed;
-        Vector3 movement = ((transform.right * direction.x * (input.Player.Sprint.ReadValue<float>() > 0 && direction.y > 0 ? RunSpeed: WalkSpeed)) + 
-            (transform.forward * (input.Player.Sprint.ReadValue<float>() > 0 ? RunForward : direction.y * WalkSpeed)));
+        Vector3 movement = ((transform.right * direction.x * (input.Player.Sprint.ReadValue<float>() > 0 && direction.y > 0 && canRun ? RunSpeed: WalkSpeed)) + 
+            transform.forward * (input.Player.Sprint.ReadValue<float>() > 0 && canRun ? RunForward : direction.y * WalkSpeed)) * speedModifier;
         if (IsGrounded())
         {
             rb.linearVelocity = new Vector3(movement.x, movement.y, movement.z);
+            if (direction == new Vector2(0, 0) || movement == ((transform.right * direction.x * WalkSpeed) +
+                transform.forward * direction.y * WalkSpeed) * speedModifier)
+                stamina += 0.2f * staminaModifier;
+            else
+                stamina -= 0.1f / staminaModifier;
         }
     }
     void Jump()
     {
-        if (IsGrounded())
+        if (IsGrounded() && canRun)
         {
-            rb.AddForce(transform.up * JumpStrenght, ForceMode.Impulse);
+            rb.AddForce(transform.up * JumpStrenght * staminaModifier, ForceMode.Impulse);
         }
     }
     
@@ -122,6 +138,30 @@ public class Movement : MonoBehaviour
             {
                 inventory.selectedSlot = i;
             }
+        }
+    }
+
+    void RecalculateOverWeightModifier()
+    {
+        if(inventory.overWeightCoefficient == 0)
+        {
+            speedModifier = 1;
+            staminaModifier = 1;
+        }
+        else if (inventory.overWeightCoefficient == 1)
+        {
+            speedModifier = 0.7f;
+            staminaModifier = 0.7f;
+        }
+        else if (inventory.overWeightCoefficient == 2)
+        {
+            speedModifier = 0.4f;
+            staminaModifier = 0.7f;
+        }
+        else if (inventory.overWeightCoefficient == 3)
+        {
+            speedModifier = 0.1f;
+            staminaModifier = 0.1f;
         }
     }
     private void OnEnable()
